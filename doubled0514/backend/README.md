@@ -1,5 +1,5 @@
 # REST API Spec.
-- version 0.1 (2025/6/11)
+- version 0.1 (2025/6/13)
 # 사용자 계정
 ## 사용자 생성
 1. Endpoint
@@ -18,7 +18,7 @@
 }
 ~~~
 4. Description
-   - 사용자 계정을 생성한다. nickname과 name은 필수 입력값이다.
+   - 사용자 계정을 생성한다. 
    - nickname은 고유한 값이며 기존 사용자와 중복되면 생성이 실패한다.
 5. Response body
    - status (string): created, failed
@@ -44,7 +44,7 @@
 ~~~
 {
    "nickname":"double_d_eo",
-   "password" : "0106514aa@"
+   "password" : "qwerty1234"
 }
 ~~~
 3. Description
@@ -88,20 +88,19 @@
 1. Endpoint
    - PUT/users/<user_id>
 2. Request body
-   - password(string,필수)
+   - password(string,opt)
    - nickname(string,opt)
    - name(string,opt)
    - age(int,opt)
    - email(string,opt)
 ~~~
 {
-   "password":"qwerty1234",
+   "password":"qwerty123",
    "age" : 25
 }
 ~~~  
 3. description
    - 사용자 정보를 수정한다.
-   - 본인만 수정할 수 있도록 password 입력
 4. response body
    - status : success, failed
    - reason : 실패시, 실패 원인
@@ -137,55 +136,55 @@
 # 포스팅
 ## 포스트 올리기
 1. Endpoint
-   - POST/users/<user_id>/post
+   - POST/posts
 2. Request body
-   - title(string,필수)
+   - user_id(int,필수) 
+   - title(string,opt)
    - text(string,opt)
 ~~~
 {
+   "user_id" : 105
    "title" : "덥다",
    "text" : "에어컨이 안돼서 너무 더워요"
 }
 ~~~
 3. Description
-
+   - user_id 의 사용자가 포스트 작성
 4. Resopnse body
-   -stauts : success, failed
-   -nickname(string) : user_id에 대응하는 닉네임 반환
-   -title (string) : 성공시 제목 반환
-   -reason(string) : 실패시 실패 이유
+   - stauts : success, failed
+   - post_id(int) : 성공시 post id 반환
+   - reason(string) : 실패시 실패 이유
 ~~~
 {
-   "nickname" : "double_d_eo"
    "status" : "success",
-   "title" : "덥다"
+   "post_id" : 1
 }
 {
    "staus" : "failed",
-   "reason" : "user_id is not exist"
+   "reason" : "you can't leave title empty"
 }
 ~~~
 ## 올라온 포스트 조회하기
 1. Endpoint
-   -GET/users/<user_id>/post
+   - GET/posts
 2. Request body
-   -title(string)
-3. descriptionn
-   - user_id에 대응하는 사용자의 post 조회
-   - title로 포스트 조회
-4. response body
-   - nickname (string)
-   - title(string)
-   - text(string)
+   - post_id(int,opt)
+   - user_id(int,opt)
+   - nickname(string,opt)
+4. descriptionn
+   - 전체 포스트를 조회한다
+   - post_id, user_id, nickname에 기반해 조회할 수 있다
+5. response body
+   - [{"nickname":nickname, "title":title, "text":text},
+      {"nickname":nickname, "title":title, "text":text}, ...]
    - status : success , failed
    - reason : 실패시 실패 원인 
 ~~~
-{
-   "status" : "success",
-   "nickname" : "double_d_eo",
+[ { "nickname" : "double_d_eo",
    "title" : "덥다",
-   "text" :"에어컨이 안돼서 너무 더워요"
-}
+   "text" :"에어컨이 안돼서 너무 더워요"},
+{"nickname":"sinsohee", "title":"별로 안더움","text":"여름 치고는 시원한 편"} ]
+
 {
    "status" : "failed",
    "reason" : "cannot find posts"
@@ -194,32 +193,42 @@
 
 ## 포스트의 코멘트 조회하기
 1. Endpoint
-   -GET/users/<user_id>/post/comment
+   - GET/posts/<post_id>/comment
 2. Request body
-   - title (string, opt)
 3. Description
-   - user_id에 대응하는 사용자의 포스트의 코멘트 조회
+   - post_id에 대응하는 사용자의 포스트의 코멘트 조회
 4. Respond body
    - status (string) : 실패,성공
-   - comment (string) : 성공시 코멘트 조회
    - reason (string) : 실패시 이유
+   - [{"nickname":nickname(string), "comment":comment(string)},{"nickname":nickname(string), "comment":comment(string)}, ...]
 
 ## 특정 포스트에 커멘트 달기
 1. Endpoint
-   -POST/users/<user_id>/post/comment
+   -POST/posts/<post_id>/comment
 2. Request body
-   -user_id(int) : 커멘트 다는 사용자의 id
    -comment(string) : 커멘트
 3. Description 
-   - 
 4. Response body
-   -status(string) :성공, 실패
-   -comment(string): 성공시 커멘트 반환
-   -reason(string): 실패시 이유
+   - status(string) :성공, 실패
+   - comment_id(int): 성공시 커멘트 ID 반환
+   - reason(string): 실패시 이유
 
 
 # 소셜
 ## 다른 사용자 조회
+1. Endpoint
+   - GET/users
+2. Request body
+   - user_id(int)
+   - nickname(string)
+3. Description
+   - user_id 또는 nickname으로 조회한다
+4. Response body
+   - status(string) : 성공,실패
+   - user_id
+   - nickname
+   - email
+   - age(int)
 ## 팔로우 신청
 ## 팔로우한 목록 조회
 ## 자신에게 팔로우 요청한 목록 조회
