@@ -1,22 +1,24 @@
-from flask import Flask
+from flask import Flask, request
 
 app = Flask(__name__)
-@app.route('/hello')
-def hello():
-    print('hello')
-    return { 'message': 'hello' }
+@app.route('/users', methods=['POST'])
+def create_user():
+    
+    data = request.get_json()
+    print(data)
 
-@app.route('/hello/<name>')
-def hello_name(name):
-    print(f'hello {name}')
-    return { 'message': 'hello', 'name': name }
+    nickname = data['nickname']
+    name = data['name']
+    password = data['password']
+    age = data.get('age')
+    email = data.get('email')
 
-@app.route('/user/<user_id>')
-def user_user_id(user_id):
-    print(f'user {user_id}')
-    return ({
-        'message': 'user_id',
-        'user_id': user_id
-    })
+    user_id = 105
+
+    return {
+        'status': 'created',
+        'user_id': user_id,
+        'email': email
+    }
 
 app.run(debug=True, host='0.0.0.0', port=5001)
