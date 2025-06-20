@@ -340,8 +340,8 @@ def delete_post():
             "status": "posting delete failed",
             "reason" : str(e)
         }
-@app.route('/posting/check', methods = ['GET'])
-def post_check():
+@app.route('/posting/<int:user_id>/check', methods = ['GET'])
+def post_check(user_id):
 
     conn = get_connection()
 
@@ -350,8 +350,9 @@ def post_check():
             sql = """
             Select * 
             from posts 
+            where user_id = %s
             """
-            cursor.execute(sql)
+            cursor.execute(sql, (user_id,))
             rows = cursor.fetchall()
             conn.commit()
 
@@ -360,9 +361,9 @@ def post_check():
                 for row in rows:
                     results.append({
                         "status" : "post get success",
+                        "post_id" : row["post_id"],
                         "title" : row["title"],
-                        "text" : row["text"],
-                        "user_id" : row["user_id"]
+                        "text" : row["text"]
                     }) 
                 return {
                     "status" : "post get success",
