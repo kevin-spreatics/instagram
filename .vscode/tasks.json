@@ -3,9 +3,10 @@
     {
       "type": "cppbuild",
       "label": "C/C++: g++.exe 활성 파일 빌드",
-      "command": "g++",
+      "command": "C:/msys64/mingw64/bin/g++.exe",
       "args": [
         "-fdiagnostics-color=always",
+        "-pthread",
         "-g",
         "-std=c++17",
         "${file}",
