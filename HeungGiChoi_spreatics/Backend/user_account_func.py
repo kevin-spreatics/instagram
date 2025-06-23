@@ -94,7 +94,6 @@ def get_info(user_id):
 @app.route('/user_update/<user_id>', methods=['PUT'])
 def update_info(user_id):
     info = get_info(user_id)
-    new_info = info.copy()
     data = request.get_json()
 
     auth_nickname = data.get('auth_nickname')
@@ -104,7 +103,7 @@ def update_info(user_id):
         return {"status": "failed", "reason": "You will need to re-authenticate to edit your information."}
     
     for key_1, value_1 in data.items():
-        new_info[key_1] = value_1
+        info[key_1] = value_1
     
     conn = get_connection()
 
@@ -120,9 +119,9 @@ def update_info(user_id):
             sql_2 = """update users
                         set nickname = %s, password = %s, email = %s
                         where user_id = %s;"""
-            cursor.execute(sql_2, (new_info['nickname'], new_info['password'], new_info['email'], user_id))
+            cursor.execute(sql_2, (info['nickname'], info['password'], info['email'], user_id))
             conn.commit()
-            return {"status": "Update", "chg_nickname": new_info['nickname'], "chg_password": new_info['password'], "chg_email": new_info['email']}
+            return {"status": "Update", "chg_nickname": info['nickname'], "chg_password": info['password'], "chg_email": info['email']}
         elif len(rows) == 0:
             return {"status": "failed", "reason": "auth_nickname, auth_password was unmatched"}
 
