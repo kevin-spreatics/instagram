@@ -109,6 +109,110 @@ void func_3(){
     }
 }
 
+void func_4_2(){
+        while(1){
+        cout << "팔로우 신청" << endl;
+        cout << "(1) 다른 사용자 조회" << endl;
+        cout << "(2) 돌아가기" << endl;
+        
+        int input;
+        cin >> input;
+
+        switch(input){
+            case 1:
+                break;
+            case 2:
+                return;
+                break;
+            default:
+                cout << "잘못 입력하셨습니다. 다시 입력해주세요." << endl;
+                break;
+        }
+    }
+}
+
+void func_4_3(){
+        while(1){
+        cout << "팔로우 요청 온 목록 조회" << endl;
+        cout << "(1) 팔로우 수락" << endl;
+        cout << "(2) 팔로우 거절" << endl;
+        cout << "(3) 돌아가기" << endl;
+        
+        int input;
+        cin >> input;
+
+        switch(input){
+            case 1:
+                break;
+            case 2:
+                break;  
+            case 3:
+                return;
+                break;
+            default:
+                cout << "잘못 입력하셨습니다. 다시 입력해주세요." << endl;
+                break;
+        }
+    }
+}
+
+void func_4(){
+        while(1){
+        cout << "소셜 func" << endl;
+        cout << "(1) 다른 사용자 조회" << endl;
+        cout << "(2) 팔로우 신청" << endl;
+        cout << "(3) 팔로우 요청 온 목록 조회" << endl;
+        cout << "(4) 돌아가기" << endl;
+        
+        int input;
+        cin >> input;
+
+        switch(input){
+            case 1:
+                break;
+            case 2:
+                func_4_2();
+                break;
+            case 3:
+                func_4_3();
+                break; 
+            case 4:
+                return;
+                break;
+            default:
+                cout << "잘못 입력하셨습니다. 다시 입력해주세요." << endl;
+                break;
+        }
+    }
+}
+
+void func_5(){
+        while(1){
+        cout << "DM func" << endl;
+        cout << "(1) DM 보내기" << endl;
+        cout << "(2) DM 조회하기" << endl;
+        cout << "(3) DM 삭제하기" << endl;
+        cout << "(4) 돌아가기" << endl;        
+        int input;
+        cin >> input;
+
+        switch(input){
+            case 1:
+                break;
+            case 2:
+                break;
+            case 3:
+                break;
+            case 4:
+                return;
+                break;
+            default:
+                cout << "잘못 입력하셨습니다. 다시 입력해주세요." << endl;
+                break;
+        }
+    }
+}
+
 void main_menu(){
     int input = 0;
 
@@ -118,7 +222,9 @@ void main_menu(){
         cout << "(1) 로그인 / 회원가입" << endl;
         cout << "(2) 사용자 정보" << endl;
         cout << "(3) 포스팅" << endl;
-        cout << "(4) 프로그램 종료" << endl;
+        cout << "(4) 소셜" << endl;
+        cout << "(5) DM" << endl;
+        cout << "(0) 프로그램 종료" << endl;
 
         cin >> input;
 
@@ -133,6 +239,12 @@ void main_menu(){
                 func_3();
                 break;
             case 4:
+                func_4();
+                break;
+            case 5:
+                func_5();
+                break;
+            case 0:
                 return;
                 break;
             default:
