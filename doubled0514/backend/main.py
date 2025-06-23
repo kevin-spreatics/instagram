@@ -56,26 +56,42 @@ def login():
         return {'status':'success','user_id':user['user_id']}
     except Exception as e:
         return {'status': 'failed', 'reason': f'Unexpected error: {str(e)}'}
-## 사용자 조회
-@app.route('/users')
+
+
+## 사용자 조회 : 전체 user 조회하게끔 수정
+@app.route('/users/search',methods=['POST','GET'])
 def check():
     try:    
         data = request.get_json()
         user_id = data.get('user_id')
         nickname = data.get('nickname')
         email = data.get('email')
-        name = data.get('name')
+        
         conn = get_connection()
         with conn.cursor() as cursor:
-            cursor.execute(
-                "select nickname, name, age, email, user_id from users where user_id = %s or name = %s or email = %s or nickname =%s ", (user_id,name,email,nickname))
-            user = cursor.fetchone()
-            if not user :
-                return {'status':'failed', 'reason':'wrong informaion'}
-        return {'nickname':user['nickname'], 'name':user['name'], 'email':user['email'],'user_id':user['user_id'] }        
+            if user_id or nickname or email:
+                cursor.execute(
+                    """
+                    SELECT nickname, name, age, email, user_id 
+                    FROM users 
+                    WHERE user_id = %s OR email = %s OR nickname = %s
+                    """,
+                    (user_id, email, nickname)
+                )
+                user = cursor.fetchone()
+                if not user:
+                    return {'status': 'failed', 'reason': 'Invalid user'}, 404
+                return {'status': 'success', 'user': user}
+            else:
+                # 전체 조회
+                cursor.execute("SELECT nickname, name, age, email, user_id FROM users")
+                users = cursor.fetchall()
+                return {'status': 'success', 'users': users}
+
     
     except Exception as e:
         return {'status': 'failed', 'reason': f'Unexpected error: {str(e)}'}
+
 ## 사용자 수정
 @app.route('/users/<user_id>/<password>', methods = ['PUT'])
 def edit(user_id,password):
@@ -105,7 +121,6 @@ def edit(user_id,password):
         with conn.cursor() as cursor:
             cursor.execute( "select * from users where user_id = %s and password = %s",(user_id,password))
             user = cursor.fetchone()
-
             if not user :
                 return {'status':'failed','reason':'Invalid user_id or password'}
             
@@ -144,7 +159,6 @@ def post ():
         user_id = data.get('user_id')
         title = data.get('title')
         text = data.get('text')
-        created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         if not user_id or not text or not title :
             return {'status':'failed','reason':'user_id,title,text are required'}
         conn = get_connection()
@@ -154,11 +168,11 @@ def post ():
             if not result:
                 return {'status': 'failed', 'reason': 'invalid user_id'}
 
-            cursor.execute("insert into posts (user_id,title,text,created_at) values (%s,%s,%s,%s) ",(user_id,title,text,created_at))
+            cursor.execute("insert into posts (user_id,title,text) values (%s,%s,%s,%s) ",(user_id,title,text))
             conn.commit()
             post_id = cursor.lastrowid
 
-        return {'status':'success','created_at':created_at, 'post_id':post_id}   
+        return {'status':'success','post_id':post_id}   
     except Exception as e:
         return {'status': 'failed', 'reason': f'Unexpected error: {str(e)}'}   
 
@@ -174,7 +188,7 @@ def viewpost():
         title = data.get('title')
         created_at = data.get('created_at')
         query = """
-                SELECT u.nickname, p.title, p.text, p.created_at
+                SELECT u.nickname, p.title, p.text, p.created_at, p.post_id
                 FROM posts p
                 JOIN users u ON p.user_id = u.user_id
                 WHERE 1=1
@@ -191,8 +205,8 @@ def viewpost():
             query += " AND u.nickname = %s"
             params.append(nickname) 
         if title:
-            query += " AND p.title = %s"
-            params.append(title)
+            query += " AND title LIKE %s"
+            params.append(f"%{title}%")  # 부분 검색
         if created_at and "~" in created_at:
             start, end = created_at.split("~")
             query += " AND created_at BETWEEN %s AND %s"
@@ -203,7 +217,7 @@ def viewpost():
             result = cursor.fetchall()
             if not result :
                 return {"stats":"failed","reason":"cannot find posts"}
-        return result
+        return {'status': 'success', 'posts': result}
     except Exception as e:
         return {'status': 'failed', 'reason': f'Unexpected error: {str(e)}'} 
      
@@ -251,6 +265,8 @@ def viewcomment(post_id):
         return result
     except Exception as e:
         return {'status': 'failed', 'reason': f'Unexpected error: {str(e)}'}  
+
+
 
 
 
@@ -337,14 +353,11 @@ def viewfollower(followee_id):
         return {'status': 'failed', 'reason': f'Unexpected error: {str(e)}'}  
 
 # 팔로우 요청 수락/거절
-@app.route('/follow/request/<followee_id>', methods = ['PUT'])
-def accpetfollow(followee_id):
+@app.route('/follow/request/<followee_id>/<follower_id>', methods = ['PUT'])
+def accpetfollow(followee_id,follower_id):
     try:
         data = request.get_json()
         status = data.get('status') 
-        follower_id = data.get('follower_id')
-        if not follower_id:
-            return {'status': 'failed', 'reason': 'follower_id is required'}
         if status not in ("accepted","blocked"):
             return {'status':'failed','reason':"status must be accepted or blocked"}
         conn = get_connection()
@@ -364,13 +377,24 @@ def accpetfollow(followee_id):
             """, (follower_id, followee_id))
             if not cursor.fetchone():
                 return {'status': 'failed', 'reason': 'Follow request does not exist'}            
-            cursor.execute("""
-                UPDATE follows SET status = %s
-                WHERE follower_id = %s and followee_id = %s and status = 'pending' """ , (status, follower_id, followee_id))
+            
+            # 상태에 따라 처리
+            if status == "accepted":
+                cursor.execute("""
+                    UPDATE follows SET status = 'accepted'
+                    WHERE follower_id = %s AND followee_id = %s AND status = 'pending'
+                """, (follower_id, followee_id))
+            elif status == "blocked":
+                cursor.execute("""
+                    DELETE FROM follows
+                    WHERE follower_id = %s AND followee_id = %s AND status = 'pending'
+                """, (follower_id, followee_id))
+
             conn.commit()
         return {"status":"success"}
     except Exception as e:
         return {'status': 'failed', 'reason': f'Unexpected error: {str(e)}'}  
+    
 # DM
 ## DM 보내기
 @app.route('/message/<sender_id>/<receiver_id>',methods=['POST'])
@@ -378,7 +402,6 @@ def sendm(sender_id,receiver_id):
     try:
         data = request.get_json()
         text = data.get('text')
-        created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         if not sender_id or not receiver_id :
             return {'status':'failed','reason':'user_id is required'}
         conn = get_connection()
@@ -391,7 +414,7 @@ def sendm(sender_id,receiver_id):
             cursor.execute("SELECT 1 FROM users WHERE user_id = %s", (receiver_id,))
             if not cursor.fetchone():
                 return {'status': 'failed', 'reason': 'Invalid receiver_id'}
-            cursor.execute("""insert into messages (sender_id,receiver_id,text,created_at) values (%s,%s,%s,%s)""",(sender_id,receiver_id,text,created_at))
+            cursor.execute("""insert into messages (sender_id,receiver_id,text) values (%s,%s,%s)""",(sender_id,receiver_id,text))
             conn.commit()
             message_id = cursor.lastrowid
         return{"status":"success","message_id":message_id}
