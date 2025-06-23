@@ -6,7 +6,7 @@ void func_1(){
     while(1){
         cout << " 로그인 / 회원가입 화면" << endl;
         cout << "(1) 로그인" << endl;
-        cout << "(2) 회원가입" << endl;
+        cout << "(2) 회원가입(사용자 생성)" << endl;
         cout << "(3) 돌아가기" << endl;
 
         int input;
@@ -59,9 +59,10 @@ void func_2(){
 void func_3_x(){
     while(1){
         cout << "올라온 포스트 조회하기 하위 기능" << endl;
-        cout << "(1) 포스트에 커맨트 달기" << endl;
-        cout << "(2) 포스트에 달린 커맨트 조회하기" << endl;
-        cout << "(3) 돌아가기" << endl;
+        cout << "(1) 포스트 조회하기" << endl;
+        cout << "(2) 포스트에 커맨트 달기" << endl;
+        cout << "(3) 포스트에 달린 커맨트 조회하기" << endl;
+        cout << "(4) 돌아가기" << endl;
         int input;
         cin >> input;
 
@@ -71,6 +72,8 @@ void func_3_x(){
             case 2:
                 break;
             case 3:
+                break;
+            case 4:
                 return;
                 break;
             default:
