@@ -29,5 +29,9 @@ def user_idd(user_id):
     print(f'user_idd {user_id}')
     return {'user_idd':user_id}
 
+@app.route('/students/<student_id>')
+def stu_id(student_id):
+    return {'student_id' : student_id}
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

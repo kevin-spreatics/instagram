@@ -1,2 +1,8 @@
 ---
-say hello to my little world
+
+instagram full stack PJ 
+
+
+-> with python, mySQL
+
+---
