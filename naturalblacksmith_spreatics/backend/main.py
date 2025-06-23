@@ -14,7 +14,7 @@ def get_connection():
 
 app = Flask(__name__)
 
-#user 생성 
+#사용자 생성 
 @app.route('/user/create', methods = ['POST'])
 def create_user():
 
@@ -102,7 +102,7 @@ def login():
             "error" : str(e)
         }
 
-#password 변경 
+#사용자 비밀번호 변경 
 @app.route('/user/<int:user_id>/password_change', methods = ['PATCH'])
 def change_pw(user_id):
     data = request.get_json()
@@ -151,7 +151,8 @@ def change_pw(user_id):
                 "status" : "password change failed",
                 "reason" : "incorrect password"
             }
-        
+
+## 사용자 조회       
 @app.route('/user/check', methods = ['GET'])
 def user_check():
 
