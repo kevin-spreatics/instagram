@@ -34,21 +34,34 @@ def upload_post(user_id):
         return {"status": "post_success", "user_id": user_id, "title": title, "text": text}
 
 # 올라온 포스트 조회하기
-@app.route('/users/<user_id>/posts/<post_id>')
-def select_post(user_id, post_id):
+@app.route('/users/<user_id>/posts')
+def collection_posts(user_id):
     conn = get_connection()
     
     with conn.cursor() as cursor:
         sql = """select *
-                 from posts
-                 where user_id = %s
-                    and post_id = %s;"""
-        cursor.execute(sql, (user_id, post_id))
+                 from posts;"""
+        cursor.execute(sql)
 
         rows = cursor.fetchall()
-        print(rows[0])
 
-        return {"status": "post_selected", "user_id": user_id, "post_id": post_id, "title": rows[0]['title'], "text": rows[0]['text'], "create_at": rows[0]['created_at']}
+        return rows
+
+# 특정 포스트 조회하기
+@app.route('/users/<user_id>/posts/<post_id>')
+def select_post(user_id, post_id):
+    conn = get_connection()
+
+    with conn.cursor() as cursor:
+            sql = """select *
+                    from posts
+                    where post_id = %s;"""
+            cursor.execute(sql, (post_id, ))
+
+            rows = cursor.fetchall()
+
+            print(rows[0])
+            return {"status": "posts_selected", "user_id": rows[0]['user_id'], "post_id": post_id, "title": rows[0]['title'], "text": rows[0]['text'], "create_at": rows[0]['created_at']}
 
 # 포스트에 커맨트 달기
 @app.route('/users/<user_id>/posts/<post_id>/comments', methods=['POST'])
@@ -78,11 +91,10 @@ def select_comment(user_id, post_id):
     with conn.cursor() as cursor:
         sql = """select *
                  from comments
-                 where post_id = %s
-                    and user_id = %s;"""
-        cursor.execute(sql, (post_id, user_id))
+                 where post_id = %s;"""
+        cursor.execute(sql, (post_id, ))
         rows = cursor.fetchall()
 
-        return {"status": "selected", "user_id": user_id, "post_id": post_id, "comment_id": rows[0]['comment_id'], "text": rows[0]['text'], "created_at": rows[0]['created_at']}
+        return {"status": "selected", "user_id": rows[0]['user_id'], "post_id": post_id, "comment_id": rows[0]['comment_id'], "text": rows[0]['text'], "created_at": rows[0]['created_at']}
 
 app.run(debug=True, host='0.0.0.0', port=5000)
