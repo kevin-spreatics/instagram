@@ -5,6 +5,28 @@
 //  MIT License
 //
 
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <functional>
+#include <vector>
+#include <chrono>
+#include <memory>
+#include <algorithm>
+
+#ifdef _WIN32
+  #include <winsock2.h>
+  #include <ws2tcpip.h>
+  #pragma comment(lib, "ws2_32.lib")
+#else
+  #include <unistd.h>
+  #include <sys/types.h>
+  #include <sys/socket.h>
+  #include <netdb.h>
+  #include <poll.h>
+#endif
+
+
 #ifndef CPPHTTPLIB_HTTPLIB_H
 #define CPPHTTPLIB_HTTPLIB_H
 

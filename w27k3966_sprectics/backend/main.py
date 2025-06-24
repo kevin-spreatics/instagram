@@ -314,9 +314,7 @@ def get_comments(post_id):
 
 ## 소셜
 # 다른 사용자 조회하기
-
-
-
+@app.route('/users', methods = ['GET'])
 
 
 
