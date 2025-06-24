@@ -174,14 +174,214 @@ bool user_account_del(){
     }
 }
 
-// 로그인 후 기능 선택
-void choise_func(){
-    while(1) {
-        cout << "기능을 선택하세요." << endl;
-        cout << "(1) 사용자 조회" << endl;
+// 포스트 올리기
+void post_upload(){
+    Client cli("http://127.0.0.1:5000");
+
+    string title;
+    string text;
+
+    string endpoint = "/users/" + to_string(user_id) + "/posts";
+
+    cout << "제목을 입력하세요: ";
+    cin >> title;
+    cout << "내용을 입력하세요: ";
+    cin >> text;
+
+    json body;
+
+    body["title"] = title;
+    body["text"] = text;
+
+    auto res = cli.Post(endpoint, body.dump(), "application/json");
+
+    json response = json::parse(res->body);
+
+    if(response.contains("title") && !response["title"].is_null()){
+        cout << "status: " << response["status"] << endl;
+        cout << "user_id: " << user_id << endl;
+        cout << "title: " << response["title"] << endl;
+        cout << "text: " << response["text"] << endl;
+    }
+    else{
+        cout << "posting_failed: " << response["reason"] << endl;
+        return;
+    }
+}
+
+// 특정 포스트 조회하기
+void select_post(){
+    Client cli("http://127.0.0.1:5000");
+
+    int post_id;
+    cout << "조회할 post의 id를 입력하세요: ";
+    cin >> post_id;
+
+    string endpoint = "/users/" + to_string(user_id) + "/posts/" + to_string(post_id);
+    
+    auto res = cli.Get(endpoint);
+
+    json response = json::parse(res->body);
+
+    if(response.contains("user_id") && !response["user_id"].is_null()){
+        cout << "status: " << response["status"] << endl;
+        cout << "user_id: " << response["user_id"] << endl;
+        cout << "post_id: " << response["post_id"] << endl;
+        cout << "title: " << response["title"] << endl;
+        cout << "text: " << response["text"] << endl;
+        cout << "create_at: " << response["created_at"] << endl;
+    }
+    else{
+        cout << "특정 포스트를 조회할 수 없습니다." << endl;
+        return;
+    }
+}
+
+// 특정 포스트에 커맨트 달기
+void post_comment(){
+    Client cli("http://127.0.0.1:5000");
+    
+    int post_id;
+
+    cout << "커맨트를 달 포스트의 id를 입력하세요: ";
+    cin >> post_id;
+
+    string text;
+    string endpoint = "/users/" + to_string(user_id) + "/post/" + to_string(post_id) + "/comments";
+
+    cout << "커맨트를 입력하세요: ";
+    cin >> text;
+
+    json body;
+    body["text"] = text;
+
+    auto res = cli.Post(endpoint, body.dump(), "application/json");
+
+    json response = json::parse(res->body);
+
+    if(response.contains("user_id") && !response["user_id"].is_null()){
+        cout << "status: " << response["status"] << endl;
+        cout << "user_id: " << response["user_id"] << endl;
+    }
+    else{
+        cout << "failed: " << response["reason"] << endl;
+        return;
+    }
+}
+
+// 특정 포스트에 달린 커맨트 조회하기
+void select_post_comment(){
+    Client cli("http://127.0.0.1:5000");
+
+    int post_id;
+    cout << "커맨트를 조회할 특정 포스트의 id를 입력하세요: ";
+    cin >> post_id;
+
+    string endpoint = "/users/" + to_string(user_id) + "/posts/" + to_string(post_id) + "/comments";
+
+    auto res = cli.Get(endpoint);
+
+    json response = json::parse(res->body);
+
+    if(response.contains("comment_id") && !response["comment_id"].is_null()){
+        cout << "status: " << response["status"] << endl;
+        cout << "user_id: " << response["user_id"] << endl;
+        cout << "post_id: " << response["post_id"] << endl;
+        cout << "comment_id: " << response["comment_id"] << endl;
+        cout << "text: " << response["text"] << endl;
+        cout << "create_at: " << response["created_at"] << endl;
+    }
+    else{
+        cout << "커맨트를 조회할 수 없습니다." << endl;
+        return;
+    }
+}
+
+// 올라온 포스트 조회하기
+void collection_posts(){
+    Client cli("http://127.0.0.1:5000");
+
+    string endpoint = "/users/" + to_string(user_id) + "/posts";
+
+    auto res = cli.Get(endpoint);
+
+    if(res)
+        cout << res->body << endl;
+    else{
+        cout << res.error() << endl;
+        return;
+    }
+
+    while(1){
+        cout << "(1) 특정 포스트 조회하기" << endl;
+        cout << "(2) 특정 포스트에 커맨트 달기" << endl;
+        cout << "(3) 특정 포스트에 달린 커맨트 조회하기" << endl;
+        cout << "(4) 돌아가기" << endl;
+        
+        int input;
+        cin >> input;
+
+        switch(input){
+            case 1:
+                select_post();
+                break;
+            case 2:
+                post_comment();
+                break;
+            case 3:
+                select_post_comment();
+                break;
+            case 4:
+                return;
+                break;
+            default:
+                cout << "잘못 입력하셨습니다. 다시 입력해주세요." << endl;
+                break;
+        }
+    }
+}
+
+// 팔로우 하위기능 선택
+void Follow(){}
+
+// 메세지 하위기능 선택
+void DM(){}
+
+// 포스팅 하위 기능 선택
+void posting(){
+    cout << "Posting~~" << endl;
+
+    cout << "(1) 포스트 올리기" << endl;
+    cout << "(2) 올라온 포스트 조회하기" << endl;
+    cout << "(3) 돌아가기" << endl;
+
+    int input;
+    cin >> input;
+
+    switch(input){
+        case 1:
+            post_upload();
+            break;
+        case 2:
+            collection_posts();
+            break;
+        case 3:
+            return;
+            break;
+        default:
+            cout << "잘못 입력하셨습니다. 다시 입력하세요." << endl;
+    }
+}
+
+// 마이페이지 하위 기능 선택
+void my_page(){
+    while(1){
+        cout << "My page 입니다." << endl;
+
+        cout << "(1) 사용자 정보 조회" << endl;
         cout << "(2) 사용자 정보 수정" << endl;
         cout << "(3) 사용자 계정 삭제" << endl;
-        cout << "(4) 로그아웃" << endl;
+        cout << "(4) 돌아가기" << endl;
 
         int input;
         cin >> input;
@@ -199,6 +399,41 @@ void choise_func(){
                 }
                 break;
             case 4:
+                return;
+                break;
+            default:
+                cout << "잘못 입력하셨습니다. 다시 입력하세요." << endl;
+        }
+    }
+}
+
+// 로그인 후 기능 선택
+void choise_func(){
+    while(1) {
+        cout << "기능을 선택하세요." << endl;
+        cout << "(1) My page" << endl;
+        cout << "(2) Posting" << endl;
+        cout << "(3) Follow" << endl;
+        cout << "(4) DM" << endl;
+        cout << "(5) log_out" << endl;
+
+        int input;
+        cin >> input;
+
+        switch(input){
+            case 1:
+                my_page();
+                break;
+            case 2:
+                posting();
+                break;
+            case 3:
+                Follow();
+                break;
+            case 4:
+                DM();
+                break;
+            case 5:
                 cout << "로그아웃 되었습니다." << endl;
                 log_out();
                 return;
