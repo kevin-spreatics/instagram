@@ -5,9 +5,9 @@ app = Flask(__name__)
 
 def get_connection():
     return pymysql.connect(
-       host='database-1.cts2qeeg0ot5.ap-northeast-2.rds.amazonaws.com'
-        user='kevin'
-        password='spreatics*'
+       host='database-1.cts2qeeg0ot5.ap-northeast-2.rds.amazonaws.com',
+        user='kevin',
+        password='spreatics*',
         db='instagram',
         charset='utf8mb4',
         cursorclass=pymysql.cursors.DictCursor
