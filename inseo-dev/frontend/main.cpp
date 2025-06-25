@@ -29,7 +29,7 @@ void comment_list(string);    // 해당 포스트 댓글 목록 조회
 void search_user(); // 특정 유저 검색
 void search_post(); // 특정 포스트 검색
 
-Client cli("127.0.0.1:5000");
+Client cli("3.34.112.5:5000");
 string user_input;
 string session_cookie; // 세션에 저장되어있는 user_id
 string current_post_id; 
