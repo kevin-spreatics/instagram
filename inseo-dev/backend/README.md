@@ -7,7 +7,7 @@
 ## 사용자 생성
 
 1. Endpoint
-   - POST /users
+   - POST /users/signup
 2. Request body
    - nickname (string): 사용자 nickname, 필수/고유
    - name (string): 사용자 이름, 필수
@@ -17,10 +17,10 @@
 
 ```
 {
-  "nickname": "inseo",
-  "name": "전인서",
-  "password": "1234",
-  "email": "zzangis345@naver.com"
+  "nickname":"zzangis34",
+  "name":"전인서",
+  "password":"1234",
+  "age":30
 }
 ```
 
@@ -118,6 +118,37 @@
 }
 ```
 
+## 사용자 본인 정보 조회
+
+1. Endpoint
+   - GET /users/me
+2. Request body
+3. Description
+   - 로그인한 사용자 계정을 조회한다.
+   - 세션 없으면 거부한다.
+4. Response body
+   - status (string): success, failed
+   - user (object): 조회할 사용자 정보
+     - user_id (int)
+     - nickname (string)
+     - name (string)
+     - age (int)
+     - email (string)
+   - reason (string): 실패시, 실패 원인
+
+```
+{
+  "status": "success",
+  "user": {
+    "user_id": 105,
+    "nickname": "inseo",
+    "name": "전인서",
+    "age": 30,
+    "email": "zzangis345@naver.com",
+  }
+}
+```
+
 ## 사용자 정보 조회
 
 1. Endpoint
@@ -160,7 +191,7 @@
 ## 사용자 정보 수정
 
 1. Endpoint
-   - PUT /users/<user_id>
+   - PUT /users/me/<user_id>
      - user_id (int): 수정할 사용자 id
 2. Request body
    - nickname (string): 사용자 nickname
@@ -200,7 +231,7 @@
 ## 사용자 삭제
 
 1. Endpoint
-   - DELETE /users/<user_id>
+   - DELETE /users/me/<user_id>
      - user_id (int): 삭제할 사용자 id
 2. Request body
    - 없음
@@ -229,7 +260,7 @@
 ## 포스트 올리기
 
 1. Endpoint
-   - POST /posts
+   - POST /posts/upload
 2. Request body
    - title (string): 포스트 제목, 필수
    - text (string): 포스트 내용, 필수수
@@ -271,7 +302,7 @@
 ## 올라온 포스트 조회하기
 
 1. Endpoint
-   - GET /posts
+   - GET,POST /posts
 2. Request body
    - user_id (int): 조회할 특정 사용자 id
    - post_id (int): 조회할 특정 포스트 id
