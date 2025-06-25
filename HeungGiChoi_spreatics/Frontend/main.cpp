@@ -91,7 +91,7 @@ void user_info_update() {
     cout << "nickname: ";
     cin >> auth_nickname;
     cout << "password: ";
-    cin >> auth_password;
+    cin >> auth_password;    
     
     cout << "수정할 정보를 입력하세요. " << endl;
     cout << "변경할 nickname: " ;
@@ -193,6 +193,9 @@ void post_upload(){
     body["title"] = title;
     body["text"] = text;
 
+    cout << body["title"] << endl;
+    cout << body["text"] << endl;
+
     auto res = cli.Post(endpoint, body.dump(), "application/json");
 
     json response = json::parse(res->body);
@@ -247,7 +250,7 @@ void post_comment(){
     cin >> post_id;
 
     string text;
-    string endpoint = "/users/" + to_string(user_id) + "/post/" + to_string(post_id) + "/comments";
+    string endpoint = "/users/" + to_string(user_id) + "/posts/" + to_string(post_id) + "/comments";
 
     cout << "커맨트를 입력하세요: ";
     cin >> text;
@@ -351,30 +354,32 @@ void DM(){}
 void posting(){
     cout << "Posting~~" << endl;
 
-    cout << "(1) 포스트 올리기" << endl;
-    cout << "(2) 올라온 포스트 조회하기" << endl;
-    cout << "(3) 돌아가기" << endl;
+    while(1){
+        cout << "(1) 포스트 올리기" << endl;
+        cout << "(2) 올라온 포스트 조회하기" << endl;
+        cout << "(3) 돌아가기" << endl;
 
-    int input;
-    cin >> input;
+        int input;
+        cin >> input;
 
-    switch(input){
-        case 1:
-            post_upload();
-            break;
-        case 2:
-            collection_posts();
-            break;
-        case 3:
-            return;
-            break;
-        default:
-            cout << "잘못 입력하셨습니다. 다시 입력하세요." << endl;
+        switch(input){
+            case 1:
+                post_upload();
+                break;
+            case 2:
+                collection_posts();
+                break;
+            case 3:
+                return;
+                break;
+            default:
+                cout << "잘못 입력하셨습니다. 다시 입력하세요." << endl;
+        }
     }
 }
 
 // 마이페이지 하위 기능 선택
-void my_page(){
+bool my_page(){
     while(1){
         cout << "My page 입니다." << endl;
 
@@ -395,11 +400,11 @@ void my_page(){
                 break;
             case 3:
                 if (user_account_del()){
-                    return;
+                    return true;
                 }
                 break;
             case 4:
-                return;
+                return false;
                 break;
             default:
                 cout << "잘못 입력하셨습니다. 다시 입력하세요." << endl;
@@ -422,7 +427,9 @@ void choise_func(){
 
         switch(input){
             case 1:
-                my_page();
+                if(my_page()){
+                    return;
+                }
                 break;
             case 2:
                 posting();
@@ -512,6 +519,8 @@ void log_in(){
 }
 
 int main() {
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
 
     log_in();
 
