@@ -1,4 +1,4 @@
-from flask import Flask, request 
+from flask import Flask, request , jsonify
 import pymysql
 from datetime import datetime 
 app = Flask(__name__)
@@ -7,7 +7,7 @@ def get_connection():
         host='database-1.cts2qeeg0ot5.ap-northeast-2.rds.amazonaws.com',
         user='kevin',
         password='spreatics*',
-        db='insta_doubled',
+        db='instagram',
         charset='utf8mb4',
         cursorclass=pymysql.cursors.DictCursor
      )
@@ -168,7 +168,7 @@ def post ():
             if not result:
                 return {'status': 'failed', 'reason': 'invalid user_id'}
 
-            cursor.execute("insert into posts (user_id,title,text) values (%s,%s,%s,%s) ",(user_id,title,text))
+            cursor.execute("insert into posts (user_id,title,text) values (%s,%s,%s) ",(user_id,title,text))
             conn.commit()
             post_id = cursor.lastrowid
 
@@ -177,7 +177,7 @@ def post ():
         return {'status': 'failed', 'reason': f'Unexpected error: {str(e)}'}   
 
 ## 포스트 조회
-@app.route('/post')
+@app.route('/post/search',methods = ['POST'])
 def viewpost():
     
     try: 
@@ -243,15 +243,13 @@ def comment(post_id,user_id):
         return {'status': 'failed', 'reason': f'Unexpected error: {str(e)}'}  
     
 ## 포스트 코멘트 조회
-@app.route('/post/<post_id>/comment')
+@app.route('/post/<post_id>/comment', methods = ["POST"])
 def viewcomment(post_id):
     try:
         conn = get_connection()
         with conn.cursor() as cursor:
             cursor.execute("""SELECT 
-                    p.title AS 글제목,
-                    p.text AS 내용,
-                    writer.nickname AS 글쓴이,
+
                     commenter.nickname AS 댓글단이,
                     c.text AS 댓글내용
                 FROM comments c
@@ -260,9 +258,7 @@ def viewcomment(post_id):
                 JOIN users commenter ON c.user_id = commenter.user_id
                 WHERE c.post_id = %s""",(post_id,))
             result = cursor.fetchall()
-        if not result :
-            return {'satus':'faield', 'reason':'Invalid Input'}
-        return result
+        return {'status': 'success', 'comments': result}
     except Exception as e:
         return {'status': 'failed', 'reason': f'Unexpected error: {str(e)}'}  
 
