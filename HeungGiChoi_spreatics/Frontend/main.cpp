@@ -11,7 +11,7 @@ int user_id = -1;
 
 // 회원가입(사용자 생성)
 void user_create() {
-    Client cli("http://127.0.0.1:5000");
+    Client cli("http://43.200.35.210:5000");
 
     string nickname;
     string password;
@@ -55,7 +55,7 @@ void user_create() {
 
 // 사용자 정보 조회
 void select_user() {
-    Client cli("http://127.0.0.1:5000");
+    Client cli("http://43.200.35.210:5000");
 
     string endpoint = "/users/" + to_string(user_id);
 
@@ -79,7 +79,7 @@ void select_user() {
 
 // 사용자 정보 수정
 void user_info_update() {
-    Client cli("http://127.0.0.1:5000");
+    Client cli("http://43.200.35.210:5000");
     
     string auth_nickname;
     string auth_password;
@@ -133,7 +133,7 @@ void log_out(){
 
 // 사용자 계정 삭제
 bool user_account_del(){
-    Client cli("http://127.0.0.1:5000");
+    Client cli("http://43.200.35.210:5000");
 
     string auth_nickname;
     string auth_password;
@@ -176,7 +176,7 @@ bool user_account_del(){
 
 // 포스트 올리기
 void post_upload(){
-    Client cli("http://127.0.0.1:5000");
+    Client cli("http://43.200.35.210:5000");
 
     string title;
     string text;
@@ -214,7 +214,7 @@ void post_upload(){
 
 // 특정 포스트 조회하기
 void select_post(){
-    Client cli("http://127.0.0.1:5000");
+    Client cli("http://43.200.35.210:5000");
 
     int post_id;
     cout << "조회할 post의 id를 입력하세요: ";
@@ -242,7 +242,7 @@ void select_post(){
 
 // 특정 포스트에 커맨트 달기
 void post_comment(){
-    Client cli("http://127.0.0.1:5000");
+    Client cli("http://43.200.35.210:5000");
     
     int post_id;
 
@@ -274,7 +274,7 @@ void post_comment(){
 
 // 특정 포스트에 달린 커맨트 조회하기
 void select_post_comment(){
-    Client cli("http://127.0.0.1:5000");
+    Client cli("http://43.200.35.210:5000");
 
     int post_id;
     cout << "커맨트를 조회할 특정 포스트의 id를 입력하세요: ";
@@ -302,7 +302,7 @@ void select_post_comment(){
 
 // 올라온 포스트 조회하기
 void collection_posts(){
-    Client cli("http://127.0.0.1:5000");
+    Client cli("http://43.200.35.210:5000");
 
     string endpoint = "/users/" + to_string(user_id) + "/posts";
 
@@ -453,7 +453,7 @@ void choise_func(){
 
 // 사용자 로그인
 void user_auth() {
-    Client cli("http://127.0.0.1:5000");
+    Client cli("http://43.200.35.210:5000");
 
     string nickname;
     string password;
