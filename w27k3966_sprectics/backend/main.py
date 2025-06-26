@@ -79,7 +79,7 @@ def user_login():
 @app.route('/users/<int:user_id>', methods=['GET'])
 def get_user_info(user_id):
     conn = get_connection()
-    with conn.cursor(DictCursor) as cursor:
+    with conn.cursor(pymysql.cursors.DictCursor) as cursor:
         sql = "SELECT user_id, nickname, name, email, age FROM users WHERE user_id = %s"
         cursor.execute(sql, (user_id,))
         result = cursor.fetchone()
@@ -167,6 +167,26 @@ def del_user(user_id):
     return {
         "status" : "deleted"
     }
+# 다른 사용자 조회하기
+@app.route('/users/nickname/<nickname>', methods=['GET'])
+def get_user_by_nickname(nickname):
+    conn = get_connection()
+    with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+        sql = "SELECT user_id, nickname, name, email, age FROM users WHERE nickname = %s"
+        cursor.execute(sql, (nickname,))
+        result = cursor.fetchone()
+    conn.close()
+
+    if result:
+        return {
+            "status": "success",
+            "user": result
+        }
+    else:
+        return {
+            "status": "failed",
+            "reason": "User not found"
+        }, 404
 
 ## 포스팅
 # 게시글 생성
@@ -323,8 +343,7 @@ def delete_post(post_id):
         return {"status": "failed", "reason": "Missing user_id"}, 400
 
     conn = get_connection()
-    with conn.cursor() as cursor:
-        # 게시글 존재 확인 및 작성자 확인
+    with conn.cursor(pymysql.cursors.DictCursor) as cursor: 
         cursor.execute("SELECT user_id FROM posts WHERE post_id = %s", (post_id,))
         result = cursor.fetchone()
 
@@ -332,30 +351,29 @@ def delete_post(post_id):
             conn.close()
             return {"status": "failed", "reason": "Post not found"}, 404
 
-        author_id = result[0]
+        author_id = result["user_id"]  
+
         if author_id != user_id:
             conn.close()
             return {"status": "failed", "reason": "Permission denied"}, 403
 
-        # 삭제 실행
         cursor.execute("DELETE FROM posts WHERE post_id = %s", (post_id,))
         conn.commit()
     conn.close()
 
     return {"status": "success"}
 
-# 댓글 삭제
+# 댓글삭제
 @app.route('/comments/<int:comment_id>', methods=['DELETE'])
 def delete_comment(comment_id):
-    data = request.get_json()
+    data = request.get_json(force=True) 
     user_id = data.get('user_id')
 
     if not user_id:
         return {"status": "failed", "reason": "Missing user_id"}, 400
 
     conn = get_connection()
-    with conn.cursor() as cursor:
-        # 댓글 존재 및 작성자 확인
+    with conn.cursor(pymysql.cursors.DictCursor) as cursor:
         cursor.execute("SELECT user_id FROM comments WHERE comment_id = %s", (comment_id,))
         result = cursor.fetchone()
 
@@ -363,12 +381,12 @@ def delete_comment(comment_id):
             conn.close()
             return {"status": "failed", "reason": "Comment not found"}, 404
 
-        author_id = result[0]
+        author_id = result["user_id"]  
+
         if author_id != user_id:
             conn.close()
             return {"status": "failed", "reason": "Permission denied"}, 403
 
-        # 삭제 실행
         cursor.execute("DELETE FROM comments WHERE comment_id = %s", (comment_id,))
         conn.commit()
     conn.close()
@@ -376,31 +394,6 @@ def delete_comment(comment_id):
     return {"status": "success"}
 
 
-## 소셜
-# 다른 사용자 조회하기
-@app.route('/users/nickname/<nickname>', methods=['GET'])
-def get_user_by_nickname(nickname):
-    conn = get_connection()
-    with conn.cursor(pymysql.cursors.DictCursor) as cursor:
-        sql = """
-        SELECT user_id, nickname, name, email, age
-        FROM users
-        WHERE nickname = %s
-        """
-        cursor.execute(sql, (nickname,))
-        user = cursor.fetchone()
-        
-    conn.close()
 
-    if user:
-        return {
-            "status": "success",
-            "user": user
-        }, 200
-    else:
-        return {
-            "status": "failed",
-            "reason": f"nickname '{nickname}' not found"
-        }, 404
 
 app.run(debug=True, host='0.0.0.0', port=5001)
