@@ -131,40 +131,42 @@ void m_1_userLogin() {
 
 // 1-1 내 정보 보기
 
-void view_other_user() {
-    string id_str;
-    cout << "\n[다른 사용자 조회]" << endl;
-    cout << "조회할 user_id 입력: ";
-    cin >> id_str;
+void view_my_info() {
+    if (user_id == -1) {
+        cout << "\n‼️먼저 로그인해주세요!" << endl;
+        return;
+    }
 
-    string path = "/users/" + id_str;
+    string path = "/users/" + to_string(user_id);
     auto res = cli.Get(path.c_str());
 
     if (res && res->status == 200) {
         json response = json::parse(res->body);
         json user = response["user"];
 
-        cout << "\n[사용자 정보]" << endl;
+        cout << "\n[내 정보]" << endl;
         cout << "user_id : " << user["user_id"] << endl;
         cout << "닉네임   : " << user["nickname"] << endl;
         cout << "이름     : " << user["name"] << endl;
         cout << "이메일   : " << user["email"] << endl;
         cout << "나이     : " << user["age"] << endl;
     } else {
-        cout << "사용자 정보를 불러올 수 없습니다." << endl;
+        cout << "❌ 내 정보를 불러오지 못했습니다." << endl;
         if (res) {
+            cout << "상태 코드: " << res->status << endl;
             try {
                 json response = json::parse(res->body);
                 if (response.contains("reason"))
-                    cout << "상태 코드: " << res->status << " / 이유: " << response["reason"] << endl;
+                    cout << "이유: " << response["reason"] << endl;
             } catch (...) {
-                cout << "상태 코드: " << res->status << " / 응답 파싱 실패" << endl;
+                cout << "응답 파싱 실패" << endl;
             }
         } else {
             cout << "서버 응답 없음" << endl;
         }
     }
 }
+
 
 // 1-2 내 정보 수정
 void update_my_info() {
