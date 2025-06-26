@@ -1,5 +1,6 @@
 import pymysql
 from flask import Flask, request
+from pymysql.cursors import DictCursor
 
 app = Flask(__name__)
 
