@@ -202,11 +202,29 @@ void showUserMenu() {
 }
 
 // 내 프로필 메뉴
+void fetchAndDisplayMyInfo(int user_id) {
+    string path = "/users/" + to_string(user_id);
+    auto res = cli.Get(path.c_str());
+
+    if (res && res->status == 200) {
+        auto user_info = json::parse(res->body);
+        cout << "닉네임: " << user_info["nickname"] << endl;
+        cout << "이름: " << user_info["name"] << endl;
+        cout << "이메일: " << user_info["email"] << endl;
+        cout << "나이: " << user_info["age"] << endl;
+    } else {
+        cout << "사용자 정보를 불러오지 못했습니다." << endl;
+    }
+}
+
+int currentUserId;
+
 void showMyProfileMenu(const string& nickname) {
     int choice;
+    fetchAndDisplayMyInfo(currentUserId);  // ← 프로필 정보 조회 후 출력
+
     while (true) {
         cout << "\n[" << nickname << "님의 프로필]" << endl;
-        cout << "[닉네임, 이메일, 나이 등 자동 조회됨]" << endl;
         cout << "1. 내 정보 조회/수정/삭제" << endl;
         cout << "2. 내 포스트 보기/작성" << endl;
         cout << "3. 팔로우 관리" << endl;

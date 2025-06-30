@@ -136,7 +136,7 @@ def login():
 
             # 저장된 해시값과 입력한 비밀번호가 일치하는지 확인
             if check_password_hash(user['password'], password):
-                return jsonify({"status": "authenticated"})
+                return jsonify({"status": "authenticated", "user_id": user["user_id"]})
             return jsonify({"status": "failed", "reason": "Invalid credentials"})
     finally:
         conn.close()
