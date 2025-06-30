@@ -1,5 +1,7 @@
+#include <curl/curl.h>
 #include <iostream>
 #include <string>
+#include <sstream>
 using namespace std;
 
 // 로그인 여부를 저장하는 변수 (true면 로그인 상태)
@@ -9,18 +11,122 @@ bool isLoggedIn = false;
 string currentUserNickname;
 
 // 함수 선언부
-void showLoginMenu();
-void showUserMenu();
-void showSocialMenu();
-void showDMMenu();
-void showMyProfileMenu(const std::string& nickname);
-void showOtherUserMenu(const std::string& nickname);
-void myinfo();
-void mypost(const std::string& nickname);
-void myfollowing();
-void sendingDM(const std::string& toUser);
-void sendingfollow(const std::string& toUser);
-void showpost(const std::string& nickname);
+void showLoginMenu(); // 로그인 및 회원가입
+void showUserMenu(); // 사용자 기능(프로필 확인, 포스트)
+void showSocialMenu(); // 소셜 기능(사용자 검색)
+void showDMMenu(); // dm 기능(특정 사용자와의 대화 보기)
+void showMyProfileMenu(const string& nickname); // 내 프로필 메뉴(내 정보 조회, 포스트 보기/작성, 팔로우 관리)
+void showOtherUserMenu(const string& nickname);// 타인 프로필 메뉴(dm 전송, 팔로우 신청, 포스트 보기 및 댓글 작성)
+void myinfo(); // 내 정보 조회/수정/삭제
+void mypost(const string& nickname); // 내 포스트 관리 메뉴(포스트 작성/조회)
+void myfollowing(); // 팔로우 관리(팔로워/팔로일 조회, 팔로우 요청 수락/거절)
+void sendingDM(const string& toUser); // dm 전송
+void sendingfollow(const string& toUser); // 팔로우 요청
+void showpost(const string& nickname); // 포스트 보기, 댓글 작성
+
+size_t writeCallback(char* ptr, size_t size, size_t nmemb, void* userdata) {
+    string* response = static_cast<string*>(userdata);
+    response->append(ptr, size * nmemb);
+    return size * nmemb;
+}
+
+
+
+// 로그인 요청 함수
+bool loginRequest(const string& nickname, const string& password) {
+    CURL* curl = curl_easy_init();
+    if (!curl) {
+        cerr << "curl 초기화 실패" << endl;
+        return false;
+    }
+
+    string url = "http://localhost:5000/login";
+    string json = "{\"nickname\": \"" + nickname + "\", \"password\": \"" + password + "\"}";
+    string responseBody;
+
+    struct curl_slist* headers = nullptr;
+    headers = curl_slist_append(headers, "Content-Type: application/json");
+
+    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json.c_str());
+
+    // 응답 본문을 저장할 콜백 등록
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &responseBody);
+
+    CURLcode res = curl_easy_perform(curl);
+    long response_code;
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+
+    curl_easy_cleanup(curl);
+    curl_slist_free_all(headers);
+
+    if (res != CURLE_OK) {
+        cerr << "로그인 요청 실패: " << curl_easy_strerror(res) << endl;
+        return false;
+    }
+
+    cout << "서버 응답: " << responseBody << endl;
+
+    if (responseBody.find("\"status\": \"authenticated\"") != string::npos) {
+        return true;
+    }
+
+    return false;
+}
+
+
+// 회원가입 요청 함수
+bool signupRequest(const string& nickname, const string& name,
+                   const string& password, const string& email, int age) {
+    CURL* curl = curl_easy_init();
+    if (!curl) return false;
+
+    ostringstream json;
+    json << "{"
+         << "\"nickname\": \"" << nickname << "\", "
+         << "\"name\": \"" << name << "\", "
+         << "\"password\": \"" << password << "\", "
+         << "\"email\": \"" << email << "\", "
+         << "\"age\": " << age
+         << "}";
+
+    string url = "http://localhost:5000/users";
+    struct curl_slist* headers = nullptr;
+    headers = curl_slist_append(headers, "Content-Type: application/json");
+
+    string responseBody;
+
+    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json.str().c_str());
+
+    // 응답 본문 콜백 추가
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &responseBody);
+
+    CURLcode res = curl_easy_perform(curl);
+    long response_code;
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+
+    curl_easy_cleanup(curl);
+    curl_slist_free_all(headers);
+
+    if (res != CURLE_OK) {
+        cerr << "회원가입 요청 실패: " << curl_easy_strerror(res) << endl;
+        return false;
+    }
+
+    if (response_code == 200) {
+        return true;
+    } else {
+        cout << "회원가입 실패: " << responseBody << endl;
+        return false;
+    }
+}
+
+
 
 // 메인 함수 (프로그램 시작점)
 int main() {
@@ -35,7 +141,7 @@ int main() {
         if (isLoggedIn) {
             cout << "2. 사용자 기능" << endl;
             cout << "3. 소셜 기능" << endl;
-            cout << "4. DM함" << endl;
+            cout << "4. 메시지 기능" << endl;
         }
 
         cout << "0. 종료" << endl;
@@ -88,18 +194,39 @@ void showLoginMenu() {
             cout << "비밀번호 입력: ";
             cin >> password;
 
-            // 👉 POST /login 호출로 백엔드 인증 요청
+            // POST /login 호출로 백엔드 인증 요청
             // 로그인 성공 시 아래 처리
-            currentUserNickname = nickname;
-            isLoggedIn = true;
-            cout << nickname << "님 로그인 완료." << endl;
+            if (loginRequest(nickname, password)) {
+                currentUserNickname = nickname;
+                isLoggedIn = true;
+                cout << nickname << "님 로그인 완료." << endl;
+            } else {
+                cout << "로그인 실패. 닉네임 또는 비밀번호를 확인하세요." << endl;
+            }
             break;
 
-        case 2:
-            // 👉 회원가입 정보 입력 후 POST /users 요청
-            cout << "닉네임, 이름, 비밀번호, 이메일, 나이 입력 받기" << endl;
-            break;
+        case 2: {
+            string name, email;
+            int age;
 
+            cout << "닉네임 입력: ";
+            cin >> nickname;
+            cout << "이름 입력: ";
+            cin >> name;
+            cout << "비밀번호 입력: ";
+            cin >> password;
+            cout << "이메일 입력: ";
+            cin >> email;
+            cout << "나이 입력: ";
+            cin >> age;
+
+            if (signupRequest(nickname, name, password, email, age)) {
+                cout << "회원가입 성공! 로그인 해주세요." << endl;
+            } else {
+                cout << "회원가입 실패. 중복된 닉네임일 수 있습니다." << endl;
+            }
+            break;
+        }
         case 0:
             return;
 
@@ -152,7 +279,7 @@ void showOtherUserMenu(const string& nickname) {
     while (true) {
         cout << "\n[" << nickname << "의 프로필]" << endl;
         cout << "[해당 유저 정보 자동 조회]" << endl;
-        cout << "1. DM 보내기" << endl;
+        cout << "1. 메시지 보내기" << endl;
         cout << "2. 팔로우 신청" << endl;
         cout << "3. 포스트 보기 및 댓글 작성" << endl;
         cout << "0. 뒤로가기" << endl;
@@ -182,11 +309,11 @@ void myinfo() {
 
         switch (choice) {
             case 1:
-                // 👉 PUT /users/:id 요청
+                // PUT /users/:id 요청
                 cout << "수정할 항목 입력받고 백엔드에 전송" << endl;
                 break;
             case 2:
-                // 👉 DELETE /users/:id 요청
+                // DELETE /users/:id 요청
                 cout << "계정 삭제됨. 로그아웃 처리됩니다." << endl;
                 isLoggedIn = false;
                 currentUserNickname = "";
@@ -213,8 +340,8 @@ void mypost(const string& nickname) {
 
         switch (choice) {
             case 1:
-                // 👉 POST /posts 요청
-                cout << "제목과 내용 입력 받아 게시글 작성 요청" << endl;
+                // POST /posts 요청
+                cout << "포스트 작성" << endl;
                 break;
             case 2:
                 showpost(nickname);  // 조회
@@ -239,7 +366,7 @@ void showpost(const string& nickname) {
         cin >> choice;
 
         if (choice == 1) {
-            // 👉 POST /posts/:id/comment
+            // POST /posts/:id/comment
             cout << "댓글 입력 후 백엔드 전송" << endl;
         } else if (choice == 0) {
             return;
@@ -262,11 +389,11 @@ void myfollowing() {
 
         switch (choice) {
             case 1:
-                // 👉 GET /follow/list
+                // GET /follow/list
                 cout << "팔로워 및 팔로잉 목록 조회" << endl;
                 break;
             case 2:
-                // 👉 GET /follow/requests + POST /follow/respond
+                // GET /follow/requests + POST /follow/respond
                 cout << "팔로우 요청 목록 조회 및 응답" << endl;
                 break;
             case 0:
@@ -285,7 +412,7 @@ void sendingDM(const string& toUser) {
     cout << "메시지 입력: ";
     getline(cin, message);
 
-    // 👉 POST /dm
+    // POST /dm
     cout << "[DM 전송 요청] to: " << toUser << ", message: " << message << endl;
 }
 
@@ -294,7 +421,7 @@ void sendingfollow(const string& toUser) {
     cout << "[팔로우 요청]" << endl;
     cout << toUser << "님에게 팔로우 요청을 보냅니다." << endl;
 
-    // 👉 POST /follow/request
+    // POST /follow/request
 }
 
 // 소셜 메뉴
@@ -313,7 +440,7 @@ void showSocialMenu() {
             cout << "닉네임 키워드 입력: ";
             cin >> keyword;
 
-            // 👉 GET /users?keyword=xxx
+            // GET /users?keyword=xxx
             cout << "[검색 요청 → 결과 목록 출력]" << endl;
             break;
         case 0:
@@ -339,7 +466,7 @@ void showDMMenu() {
             cout << "상대방 닉네임 입력: ";
             cin >> targetUser;
 
-            // 👉 GET /dm/conversation?user1_id=&user2_id=
+            // GET /dm/conversation?user1_id=&user2_id=
             cout << "[대화 내용 자동 조회]" << endl;
             break;
         case 0:
