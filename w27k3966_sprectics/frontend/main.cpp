@@ -1,59 +1,115 @@
+#include "httplib.h"
+#include "json.hpp"
 #include <iostream>
-#include <string>
 using namespace std;
+using namespace httplib;
+using json = nlohmann::json;
 
+Client cli("http://43.200.10.134:5001");  // EC2 서버 주소
+int user_id = -1;
+
+// 로그인 함수
 void m_1_login() {
-    string id, password;
+    string nickname, password;
 
     cout << "로그인" << endl;
-    cout << "id : " <<endl;
-    cin >> id;
+    cout << "nickname : ";
+    cin >> nickname;
 
-    cout << "password : " <<endl;
+    cout << "password : ";
     cin >> password;
 
-    if (id == "sohee" && password == "1234") {
-        cout << "== 로그인 성공 ==" << endl;
+    json body;
+    body["nickname"] = nickname;
+    body["password"] = password;
+
+    auto res = cli.Post("/users/login", body.dump(), "application/json");
+
+    if (res) {
+
+        try {
+            json response = json::parse(res->body);
+            if (response["status"] == "success") {
+                cout << "== 로그인 성공 ==" << endl;
+                user_id = response["user_id"];
+                cout << "user_id: " << user_id << endl;
+            } else {
+                cout << "== 로그인 실패 ==" << endl;
+                if (response.contains("reason"))
+                    cout << "이유: " << response["reason"] << endl;
+            }
+        } catch (json::parse_error& e) {
+            cout << "== 응답 파싱 실패 ==" << endl;
+            cout << "에러 내용: " << e.what() << endl;
+        }
     } else {
-        cout <<"== 로그인 실패. 아이디 또는 비밀번호를 확인하세요. ==" <<endl;
+        cout << "요청 실패. 오류 코드: " << res.error() << endl;
     }
 }
 
+// 회원가입 함수
 void m_1_signup() {
-    string nickname, id, password, email;
+    string nickname, password, name, age, email;
+    cin.ignore(); 
 
-    cout << "회원가입" << endl;
+    cout << "[회원가입]" << endl;
 
-    cout << "nickname : " <<endl;
-    cin >> nickname;
+    cout << "nickname: ";
+    getline(cin, nickname);
 
-    cout << "id : " <<endl;
-    cin >> id;
+    cout << "password: ";
+    getline(cin, password);
 
-    cout << "password : " <<endl;
-    cin >> password;
+    cout << "name: ";
+    getline(cin, name);
 
-    cout << "password 확인: " <<endl;
-    cin >> password;
+    cout << "age (없으면 엔터): ";
+    getline(cin, age);
 
-    cout << " email : " << endl;
-    cin >> email;
+    cout << "email (없으면 엔터): ";
+    getline(cin, email);
 
+    json body;
+    body["nickname"] = nickname;
+    body["password"] = password;
+    body["name"] = name;
+    if (!age.empty()) body["age"] = age;
+    if (!email.empty()) body["email"] = email;
 
-    cout << "== 회원가입 완료 ==" <<endl;
+    auto res = cli.Post("/users", body.dump(), "application/json");
 
+    if (res) {
+
+        try {
+            json response = json::parse(res->body);
+            if (response["status"] == "created") {
+                cout << "== 회원가입 성공 ==" << endl;
+                user_id = response["user_id"];
+                cout << "user_id: " << user_id << endl;
+            } else {
+                cout << "== 회원가입 실패 ==" << endl;
+                if (response.contains("reason"))
+                    cout << "이유: " << response["reason"] << endl;
+            }
+        } catch (json::parse_error& e) {
+            cout << "== 응답 파싱 실패 ==" << endl;
+            cout << "에러 내용: " << e.what() << endl;
+        }
+    } else {
+        cout << "요청 실패. 오류 코드: " << res.error() << endl;
+    }
 }
 
+// 로그인/회원가입 메뉴
 void m_1_userLogin() {
-    while (1) {
-        cout<< "[1. 로그인]" << endl;
-        cout<<"1. 로그인" <<endl;
-        cout<<"2. 회원가입"<< endl;
+    while (true) {
+        cout << "[ 1. 로그인 & 회워가입 ]" << endl;
+        cout << "1. 로그인" << endl;
+        cout << "2. 회원가입" << endl;
         cout << "3. 뒤로가기" << endl;
 
-
         int input;
-        cin >>input;
+        cin >> input;
         switch (input) {
             case 1:
                 m_1_login();
@@ -63,6 +119,8 @@ void m_1_userLogin() {
                 break;
             case 3:
                 return;
+                break;
+            default:
                 break;
         }
     }
@@ -102,8 +160,7 @@ void m_2_user() {
         }
     }
 }
-
-
+// 메인 메뉴
 void m_0_mainMeun() {
     while (1) {
         cout << "[홈메뉴]" << endl;
