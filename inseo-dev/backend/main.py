@@ -7,7 +7,7 @@ def get_connection():
         host='database-1.cts2qeeg0ot5.ap-northeast-2.rds.amazonaws.com',
         user='kevin',
         password='spreatics*',
-        db='instagram_inseo',
+        db='instagram',
         charset='utf8mb4',
         cursorclass=pymysql.cursors.DictCursor
     )
@@ -17,23 +17,40 @@ app = Flask(__name__)
 # 세션 암호키
 app.secret_key = 'abc1234'
 
+# 404오류시 실행
+@app.errorhandler(404)
+def not_found(e):
+    return {"status": "failed", "reason": "Not Found"}, 404
+
 # 사용자 생성
-@app.route('/users', methods=['POST'])
+@app.route('/users/signup', methods=['POST'])
 def create_user():
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     nickname = data.get('nickname')
     name = data.get('name')
     password = data.get('password')
     age = data.get('age')
+    age = int(age) if age and age.isdigit() else None
     email = data.get('email')
+    email = email if email else None
     
-    if nickname is None or name is None or password is None:
+    if not nickname or not name or not password:
         return {"status": "failed", "reason": "nickname, name, password is None"}
 
     conn = get_connection()
 
     with conn.cursor() as cursor:
         try:
+            search_sql = """    
+            SELECT *
+            FROM users
+            WHERE nickname = %s
+            """
+            cursor.execute(search_sql, (nickname,))
+            row = cursor.fetchone()
+            if row is not None:
+                return {"status": "failed", "reason": f"nickname, {nickname} is duplicated"}
+
             sql = """
             INSERT INTO users (nickname, name, password, age, email) 
                 values (%s, %s, %s, %s, %s)
@@ -64,9 +81,9 @@ def login_user():
     nickname = data.get('nickname')
     password = data.get('password')
 
-    if nickname is None:
+    if not nickname:
         return {"status":"failed", "reason":"nickname is None."}
-    elif password is None:
+    elif not password:
         return {"status":"failed", "reason":"password is None."}
     
     conn = get_connection()
@@ -100,7 +117,27 @@ def logout():
     session.pop('user_id', None)
     return {"status": "success", "logout":"logout complete."}
 
-# 사용자 조회
+# 내 정보 조회
+@app.route('/users/me')
+def get_my_info():
+    session_user_id = session.get('user_id')
+    if not session_user_id:
+        return {"status": "failed", "reason": "Login required."}
+
+    conn = get_connection()
+    with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+        sql = """
+        SELECT user_id, nickname, name, age, email
+        FROM users
+        WHERE user_id = %s
+        """
+        cursor.execute(sql, (session_user_id,))
+        row = cursor.fetchone()
+        if not row:
+            return {"status": "failed", "reason": "User not found."}
+        return {"status": "success", "user": row}
+
+# 다른 사용자 정보 조회
 @app.route('/users/search', methods = ["GET", "POST"])
 def search_user():
     data = request.get_json(silent=True) or {}
@@ -123,14 +160,14 @@ def search_user():
                     return {"status": "success", "users": "no search results."}
                 
                 return {"status": "success", "user": rows}
-            # 검색어에 해당하는 nickname 이나 name 검색
+            # 검색어에 해당하는 nickname 이나 name 검색 / 본인 정보보기
             elif search:
                 sql = """
                 SELECT age, email, name, nickname, user_id
                 FROM users
-                WHERE nickname LIKE %s OR name LIKE %s
+                WHERE nickname LIKE %s OR name LIKE %s or user_id = %s
                 """
-                cursor.execute(sql,('%'+search+'%','%'+search+'%'))
+                cursor.execute(sql,('%'+search+'%','%'+search+'%',session["user_id"]))
                 rows = cursor.fetchall()
 
                 if not rows:
@@ -142,17 +179,17 @@ def search_user():
             return { "status": "failed", "reason": str(e) }
 
 # 사용자 정보 수정
-@app.route('/users/<user_id>', methods = ['PUT'])
+@app.route('/users/me/<user_id>', methods = ['PUT'])
 def update_user(user_id):
     session_user_id = session.get('user_id')
     # 로그인 해야 접근가능
     if session_user_id is None:
         return {"status": "failed", "reason": "Login required."}
     # url user_id와 세션 user_id가 다르면 권한 없음
-    if session_user_id != user_id:
-        return {"status": "failed", "reason": "Permission denied."}
+    if str(session_user_id) != user_id:
+        return {"status": "failed", "reason": "Permission denied.", "session_user_id" : session_user_id, "user_id": user_id}
 
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     conn = get_connection()
 
     with conn.cursor(pymysql.cursors.DictCursor) as cursor:
@@ -198,14 +235,14 @@ def update_user(user_id):
             return { "status": "failed", "reason": str(e) }
         
 # 사용자 삭제
-@app.route('/users/<user_id>', methods = ['DELETE'])
+@app.route('/users/me/<user_id>', methods = ['DELETE'])
 def delete_user(user_id):
     session_user_id = session.get('user_id')
     # 로그인 해야 접근가능
     if session_user_id is None:
         return {"status": "failed", "reason": "Login required."}
     # url user_id와 세션 user_id가 다르면 권한 없음
-    if session_user_id != user_id:
+    if str(session_user_id) != user_id:
         return {"status": "failed", "reason": "Permission denied."}
     
     conn = get_connection()
@@ -229,22 +266,22 @@ def delete_user(user_id):
             return { "status": "failed", "reason": str(e) }
 
 # 포스트 올리기
-@app.route('/posts', methods = ['POST'])
+@app.route('/posts/upload', methods = ['POST'])
 def upload_post():
     user_id = session.get('user_id')
     # 로그인 해야 접근가능
-    if user_id is None:
+    if not user_id:
         return {"status": "failed", "reason": "Login required."}
     
     data = request.get_json()
     title = data.get('title')
     text = data.get('text')
 
-    if title is None:
+    if not title:
         return {"status":"failed", "reason":"title is None."}
-    elif text is None:
+    elif not text:
         return {"status":"failed", "reason":"text is None."}
-    elif user_id is None:
+    elif not user_id:
         return {"status":"failed", "reason":"user_id is None."}
     
     conn = get_connection()
@@ -274,7 +311,7 @@ def upload_post():
             return { "status": "failed", "reason": str(e) }
     
 # 올라온 포스트 조회하기
-@app.route('/posts')
+@app.route('/posts', methods=["GET","POST"])
 def search_post():
     data = request.get_json(silent=True) or {}
     user_id = data.get('user_id')
@@ -287,8 +324,9 @@ def search_post():
             # 아무정보 안보내면 전체 포스트 조회하기
             if not user_id and not post_id: 
                 sql = """
-                SELECT * 
+                SELECT posts.*, users.nickname 
                 FROM posts
+                JOIN users ON posts.user_id = users.user_id
                 """
                 cursor.execute(sql)
                 rows = cursor.fetchall()
@@ -297,8 +335,9 @@ def search_post():
             # 포스트 id로 조회하기
             elif not user_id:
                 sql = """
-                SELECT * 
+                SELECT posts.*, users.nickname 
                 FROM posts
+                JOIN users ON posts.user_id = users.user_id
                 WHERE post_id = %s
                 """
                 cursor.execute(sql,(post_id,))
@@ -307,12 +346,13 @@ def search_post():
                 if not rows :
                     return {"status": "success", "posts":f"post_id, {post_id} doesn't exist"}
 
-                return {"status": "success", "posts": rows}
+                return {"status": "success", "posts": rows[0]}
             # 유저 id로 조회하기
             elif not post_id:
                 sql = """
-                SELECT * 
+                SELECT posts.*, users.nickname 
                 FROM posts
+                JOIN users ON posts.user_id = users.user_id
                 WHERE user_id = %s
                 """
                 cursor.execute(sql,(user_id,))
@@ -335,7 +375,7 @@ def search_comments(post_id):
         with conn.cursor() as cursor:
             # 조회할 post_id 가 존재하지 않는 경우
             select = """
-            SELECT * 
+            SELECT *
             FROM posts
             WHERE post_id = %s
             """
@@ -346,8 +386,9 @@ def search_comments(post_id):
                 return {"status":"failed", "reason":f"post_id, {post_id} doesn't exist"}
             # comments 조회
             select2 = """
-            SELECT *
+            SELECT comments.*, users.nickname
             FROM comments
+            JOIN users ON comments.user_id = users.user_id
             WHERE post_id = %s
             """
             cursor.execute(select2, (post_id,))
