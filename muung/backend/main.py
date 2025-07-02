@@ -7,7 +7,7 @@ def get_connection():
         # 데이터베이스 정보
         host='database-1.cts2qeeg0ot5.ap-northeast-2.rds.amazonaws.com',
         # 데이터베이스 사용자 정보
-        user='admin',
+        user='kevin',
         # 데이터베이스 비밀번호
         password='spreatics*',
         # 데이터베이스 이름
