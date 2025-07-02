@@ -308,14 +308,14 @@ def unfollow(follow_id, follower_id):
         return jsonify({'error': str(e)}), 500
 
 # 팔로우 요청 보내기
-@app.route('/follow_requests/<int:follower_id>/<int:followee_id>', methods=['POST'])
+@app.route('/follow/requests/<int:follower_id>/<int:followee_id>', methods=['POST'])
 # 팔로우 요청 보내기 함수
 def send_follow_request(follower_id, followee_id):
     # 팔로우 요청 보내기 데이터베이스 저장
     try:
         with get_connection() as conn:
             with conn.cursor() as cursor:
-                sql = "INSERT INTO follow_requests (follower_id, followee_id) VALUES (%s, %s)"
+                sql = "INSERT INTO follows (follower_id, followee_id) VALUES (%s, %s)"
                 cursor.execute(sql, (follower_id, followee_id))
                 conn.commit()
                 return jsonify({'message': '팔로우 요청이 보내졌습니다.'}), 200
@@ -324,14 +324,14 @@ def send_follow_request(follower_id, followee_id):
         return jsonify({'error': str(e)}), 500
     
 # 팔로우 요청 수락
-@app.route('/follow_requests/<int:follower_id>/<int:followee_id>', methods=['PUT'])
+@app.route('/follow/requests/<int:follower_id>/<int:followee_id>', methods=['PUT'])
 # 팔로우 요청 수락 함수
 def accept_follow_request(follower_id, followee_id):
     # 팔로우 요청 수락 데이터베이스 수정
     try:
         with get_connection() as conn:
             with conn.cursor() as cursor:
-                sql = "UPDATE follow_requests SET status = 'accepted' WHERE follower_id = %s AND following_id = %s"
+                sql = "UPDATE follows SET status = 'accepted' WHERE follower_id = %s AND followee_id = %s"
                 cursor.execute(sql, (follower_id, followee_id))
                 conn.commit()
                 return jsonify({'message': '팔로우 요청이 수락되었습니다.'}), 200
@@ -340,14 +340,14 @@ def accept_follow_request(follower_id, followee_id):
         return jsonify({'error': str(e)}), 500
     
 # 팔로우 요청 거절
-@app.route('/follow_requests/<int:follower_id>/<int:followee_id>', methods=['PUT'])
+@app.route('/follow/requests/<int:follower_id>/<int:followee_id>', methods=['DELETE'])
 # 팔로우 요청 거절 함수
 def reject_follow_request(follower_id, followee_id):
     # 팔로우 요청 거절 데이터베이스 수정
     try:
         with get_connection() as conn:
             with conn.cursor() as cursor:
-                sql = "UPDATE follow_requests SET status = 'rejected' WHERE follower_id = %s AND following_id = %s"
+                sql = "UPDATE follows SET status = 'rejected' WHERE follower_id = %s AND followee_id = %s"
                 cursor.execute(sql, (follower_id, followee_id))
                 conn.commit()
                 return jsonify({'message': '팔로우 요청이 거절되었습니다.'}), 200
@@ -356,41 +356,52 @@ def reject_follow_request(follower_id, followee_id):
         return jsonify({'error': str(e)}), 500
     
 # 팔로우 요청 목록 조회
-@app.route('/follow_requests/<int:follower_id>', methods=['GET'])
+@app.route('/follow/requests/<int:followee_id>', methods=['GET'])
 # 팔로우 요청 목록 조회 함수
-def get_follow_requests(follower_id):
+def get_follow_requests(followee_id):
     # 팔로우 요청 목록 조회 데이터베이스 조회
     try:
         with get_connection() as conn:
             with conn.cursor() as cursor:
-                sql = "SELECT * FROM follow_requests WHERE follower_id = %s"
-                cursor.execute(sql, (follower_id))
-                follow_requests = cursor.fetchall()
-                return jsonify({'follow_requests': follow_requests}), 200
+                sql = "SELECT * FROM follows WHERE followee_id = %s"
+                cursor.execute(sql, (followee_id))
+                follows = cursor.fetchall()
+                return jsonify({'follows': follows}), 200
     # 팔로우 요청 목록 조회 데이터베이스 조회 오류
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
-# 팔로우 요청 목록 조회
-@app.route('/follow_requests/<int:followee_id>', methods=['GET'])
-# 팔로우 요청 목록 조회 함수
-def get_follow_requests_by_followee(followee_id):
-    # 팔로우 요청 목록 조회 데이터베이스 조회
+# 팔로우 목록 조회
+@app.route('/follow/following/<int:follower_id>', methods=['GET'])
+# 팔로우 목록 조회 함수
+def get_following(follower_id):
+    # 팔로우 목록 조회 데이터베이스 조회
     try:
         with get_connection() as conn:
             with conn.cursor() as cursor:
-                sql = "SELECT * FROM follow_requests WHERE followee_id = %s"
-                cursor.execute(sql, (followee_id))
-                follow_requests = cursor.fetchall()
-                return jsonify({'follow_requests': follow_requests}), 200
-    # 팔로우 요청 목록 조회 데이터베이스 조회 오류
+                sql = "SELECT * FROM follows WHERE follower_id = %s"
+                cursor.execute(sql, (follower_id))
+                follows = cursor.fetchall()
+                return jsonify({'follows': follows}), 200
+    # 팔로우 목록 조회 데이터베이스 조회 오류
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-
-
-
+# 팔로워 목록 조회
+@app.route('/follow/followers/<int:followee_id>', methods=['GET'])
+# 팔로워 목록 조회 함수
+def get_followers(followee_id):
+    # 팔로워 목록 조회 데이터베이스 조회
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cursor:
+                sql = "SELECT * FROM follows WHERE followee_id = %s"
+                cursor.execute(sql, (followee_id))
+                follows = cursor.fetchall()
+                return jsonify({'follows': follows}), 200
+    # 팔로워 목록 조회 데이터베이스 조회 오류
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # 서버 실행
 app.run(debug=True,host = '0.0.0.0', port = 5000)
